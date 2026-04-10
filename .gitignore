@@ -1,0 +1,21 @@
+# Node.js dependencies
+node_modules/
+
+# Environment variables
+.env
+*.env
+.env.example
+
+# Log files
+error.log
+server.log
+server_stdout.txt
+
+# Deployment / build artifacts
+DEPLOYMENT.md
+deployment.md
+deploy.md
+
+# Editor and system files
+.DS_Store
+Thumbs.db

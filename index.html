@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Git Playground | Web-Based Interactive Git Simulator</title>
+
+  <!-- SEO & Social -->
+  <meta name="description" content="Master Git and GitHub through hands-on practice. An interactive simulator with real-time D3 visualizations, interactive rebasing, and a safe sandbox." />
+  <meta name="keywords" content="git, learn git, interactive git, git tutorial, version control, github, git playground" />
+  <meta name="author" content="Git Playground" />
+  <meta property="og:title" content="Git Playground — Learn Git by Doing" />
+  <meta property="og:description" content="Practice real Git commands in a safe browser environment. Level up from git init to resolving merge conflicts." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="index.css" />
+
+  <!-- D3.js -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+
+<div id="app" role="application" aria-label="Git Playground">
+
+  <!-- ─── Header ────────────────────────────────────────────────────────────── -->
+  <header id="header" role="banner">
+    <div class="header-brand">
+      <span class="brand-logo" aria-hidden="true">🎮</span>
+      <span class="brand-name">Git<span>Playground</span></span>
+    </div>
+
+    <div class="header-stats" aria-label="Progress statistics">
+      <!-- XP Counter -->
+      <div class="stat-block" title="Total XP earned">
+        <span class="stat-label">XP</span>
+        <span class="stat-value" id="xp-value">0</span>
+      </div>
+
+      <!-- XP Bar + Level Progress -->
+      <div class="stat-block" title="Overall completion">
+        <span class="stat-label">Progress</span>
+        <div id="xp-bar-track" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Level progress">
+          <div id="xp-bar-fill"></div>
+        </div>
+        <span id="level-progress-text" class="stat-value">0/10</span>
+      </div>
+
+      <!-- Achievements -->
+      <button class="achievement-badge" id="achievements-btn" title="View achievements" aria-label="Achievements">
+        🏆 <span id="achievement-count">0</span>
+      </button>
+    </div>
+
+    <div class="header-controls">
+      <div class="sync-badge offline" id="sync-badge" title="Open Sync Token panel">
+        <div class="sync-dot"></div>
+        <span id="sync-label">Offline</span>
+      </div>
+      <button class="btn-ghost" id="reset-btn" title="Reset all progress" aria-label="Reset progress">Reset</button>
+      <button class="btn-ghost" id="help-btn" title="Open help guide (press ? anytime)" aria-label="Help guide">Help guide</button>
+    </div>
+  </header>
+
+  <!-- ─── Left Sidebar: Level Panel ─────────────────────────────────────────── -->
+  <nav id="level-panel" aria-label="Level navigation">
+    <!-- Rendered by LevelPanel.js -->
+  </nav>
+
+  <!-- ─── Center: Terminal ───────────────────────────────────────────────────── -->
+  <main id="terminal-container" aria-label="Interactive Git terminal" role="main">
+    <div class="terminal-topbar" aria-hidden="true">
+      <span class="terminal-dot dot-red"></span>
+      <span class="terminal-dot dot-yellow"></span>
+      <span class="terminal-dot dot-green"></span>
+      <span class="terminal-title">bash — git-playground — 80×24</span>
+      <div style="flex: 1;"></div>
+      <button id="undo-btn" class="btn-ghost undo-btn" style="padding: 2px 8px; font-size: 12px; margin-right: 8px; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; background: var(--bg-surface);" title="Rewind the repository one step">⏪ Undo</button>
+    </div>
+
+    <div id="terminal-scroll" role="log" aria-live="polite" aria-label="Terminal output">
+      <div id="terminal-output"></div>
+    </div>
+
+    <div class="terminal-input-row">
+      <div id="terminal-prompt" aria-hidden="true"></div>
+      <input
+        type="text"
+        id="terminal-input"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        placeholder="Type a git command…"
+        aria-label="Terminal command input"
+      />
+    </div>
+  </main>
+
+  <!-- ─── Right Sidebar: Hint Panel ─────────────────────────────────────────── -->
+  <aside id="hint-panel" aria-label="Level hints and cheat sheet">
+    <!-- Rendered by HintPanel.js -->
+  </aside>
+
+</div>
+
+<!-- ─── Merge Conflict Editor (Modal) ────────────────────────────────────────── -->
+<div id="merge-editor" class="hidden" role="dialog" aria-modal="true" aria-label="Merge conflict resolver">
+  <!-- Rendered by MergeEditor.js -->
+</div>
+
+<!-- ─── Toast Container ───────────────────────────────────────────────────────── -->
+<div id="toast-container" aria-live="polite" aria-label="Notifications"></div>
+
+<!-- ─── Main Application Script ──────────────────────────────────────────────── -->
+<script type="module">
+  import { GitRepository }      from './engine/GitRepository.js';
+  import { MergeConflictEngine } from './engine/MergeConflictEngine.js';
+  import { LevelManager }       from './levels/LevelManager.js';
+  import { Terminal }           from './ui/Terminal.js';
+  import { LevelPanel }         from './ui/LevelPanel.js';
+  import { HintPanel }          from './ui/HintPanel.js';
+  import { MergeEditor }        from './ui/MergeEditor.js';
+  import { ProgressBar }        from './ui/ProgressBar.js';
+  import { Toast }              from './ui/Toast.js';
+  import { AIAssistant }        from './ui/AIAssistant.js';
+  import { CommandExplainer }   from './ui/CommandExplainer.js';
+  import { Dictionary }         from './ui/Dictionary.js';
+  import { CommitGraph }        from './ui/CommitGraph.js';
+  import { WelcomeModal }       from './ui/WelcomeModal.js';
+  import { TokenSyncInfo }      from './ui/TokenSyncInfo.js';
+
+  console.log('🚀 GitPlayground initialization started');
+  window.addEventListener('error', (e) => {
+    console.error('🔴 Global error:', e.error);
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    console.error('🔴 Unhandled rejection:', e.reason);
+  });
+
+  try {
+    // ─── Initialize Core ────────────────────────────────────────────────────────
+    console.log('📦 Creating repo instance');
+    const repo           = new GitRepository();
+    console.log('📦 Creating conflict engine');
+    const conflictEngine = new MergeConflictEngine(repo);
+    console.log('📦 Creating level manager');
+    const levelManager   = new LevelManager();
+    console.log('✅ Core initialization complete');
+    window.levelManager  = levelManager; // Export for UI panels requiring global access
+    const toast          = new Toast();
+    const dictionary     = new Dictionary();
+
+  // ─── Sync Status Handling ──────────────────────────────────────────────────
+  const syncBadge = document.getElementById('sync-badge');
+  const syncLabel = document.getElementById('sync-label');
+
+  levelManager.on('syncStatus', ({ status }) => {
+    if (!syncBadge || !syncLabel) return;
+    syncBadge.className = `sync-badge ${status}`;
+    syncLabel.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+  });
+
+  // ─── Initialize UI Components ───────────────────────────────────────────────
+  const progressBar = new ProgressBar(levelManager);
+
+  const levelPanel = new LevelPanel(levelManager, (levelId) => {
+    handleLevelSwitch(levelId);
+  });
+
+  const hintPanel = new HintPanel(levelManager);
+
+  const mergeEditor = new MergeEditor(conflictEngine, (resolution) => {
+    handleMergeResolution(resolution);
+  });
+
+  const terminal = new Terminal(repo, (event) => {
+    handleCommand(event);
+  });
+  console.log('✅ Terminal initialized');
+
+  // ─── Initialize Commit Graph ──────────────────────────────────────────────────
+  let commitGraph = null;
+  // Let HintPanel render its skeleton, then inject the graph
+  setTimeout(() => {
+    commitGraph = new CommitGraph(repo, 'git-tree-canvas');
+    commitGraph.render();
+  }, 100);
+
+  // ─── AI Assistant ─────────────────────────────────────────────────────────────
+  let lastCommand = '';
+  let lastHadError = false;
+
+  const aiAssistant = new AIAssistant(() => ({
+    level:       levelManager.getCurrentLevel()?.title || 'Unknown',
+    branch:      repo.currentBranch || 'main',
+    lastCommand,
+    hasError:    lastHadError,
+  }));
+
+  // ─── Command Explainer (ghost text + tooltip) ─────────────────────────────────
+  const inputEl = document.getElementById('terminal-input');
+  const commandExplainer = new CommandExplainer(inputEl);
+
+  // ─── Welcome Modal for First-Time Users ──────────────────────────────────────
+  const welcomeModal = new WelcomeModal();
+  setTimeout(() => {
+    welcomeModal.show();
+  }, 800); // Show after app fully loads
+
+  // ─── Visual Undo Button ───────────────────────────────────────────────────────
+  const undoBtn = document.getElementById('undo-btn');
+  if (undoBtn) {
+    undoBtn.addEventListener('click', () => {
+      inputEl.value = 'undo';
+      terminal._submitCommand();
+    });
+  }
+
+  // ─── Level Setup ─────────────────────────────────────────────────────────────
+  function setupCurrentLevel() {
+    const level = levelManager.getCurrentLevel();
+    if (!level) return;
+
+    // Reset repo for fresh start on this level
+    repo.reset();
+
+    // Run level setup function if provided
+    if (level.setupFn) {
+      try {
+        level.setupFn(repo, conflictEngine);
+      } catch (e) {
+        console.error('Level setup error:', e);
+      }
+    }
+
+    hintPanel.setLevel(level);
+    hintPanel.clearError();
+    terminal.updatePrompt();
+
+    // Announce new level to terminal
+    terminal.printSystemMessage(``, 'normal');
+    terminal.printSystemMessage(`━━━ ${level.title} ━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info');
+    terminal.printSystemMessage(`🎯 Goal: ${level.goal}`, 'info');
+    terminal.printSystemMessage(``, 'normal');
+  }
+
+  // ─── Command Handler ─────────────────────────────────────────────────────────
+  function handleCommand({ input, parsed, result, levelEvent, triggerConflict, conflictData }) {
+    // Track for AI context
+    lastCommand  = input;
+    lastHadError = result.lines.some(l => l.type === 'error');
+
+    // Record the command in level manager
+    if (levelEvent) {
+      levelManager.recordCommand(levelEvent);
+    }
+
+    // Handle error display in hint panel
+    const hasError = lastHadError;
+
+    if (hasError) {
+      // Extract error info from the output lines
+      const expLine = result.lines.find(l => l.type === 'info' && l.text.startsWith('\n💡'));
+      const fixLine  = result.lines.find(l => l.type === 'warning' && l.text.startsWith('🔧'));
+
+      if (expLine) {
+        hintPanel.showError({
+          explanation: expLine.text.replace('\n💡 ', ''),
+          fix: fixLine ? fixLine.text.replace('🔧 Fix: ', '') : null,
+        });
+      }
+
+      // Offer AI help after 2+ consecutive errors
+      consecutiveErrors++;
+      if (consecutiveErrors >= 2) {
+        const errorMsg = expLine?.text?.replace('\n💡 ', '') || `Error running: ${input}`;
+        aiAssistant.askForHelp(`I got this error: "${errorMsg}". How do I fix it?`, false);
+        consecutiveErrors = 0;
+      }
+    } else {
+      hintPanel.clearError();
+      consecutiveErrors = 0;
+    }
+
+    // Trigger merge editor if conflict
+    if (triggerConflict && conflictData) {
+      setTimeout(() => mergeEditor.show(conflictData), 300);
+    }
+
+    // Update git tree in hint panel
+    hintPanel.updateGitTree(repo);
+
+    // Sync progress to backend (debounced)
+    debouncedSync();
+
+    // Check level completion
+    const completion = levelManager.checkCompletion(repo);
+    if (completion.completed) {
+      handleLevelComplete(completion);
+    }
+  }
+
+  // ─── Error tracking for AI assist ────────────────────────────────────────────
+  let consecutiveErrors = 0;
+
+  // ─── Level Completion ─────────────────────────────────────────────────────────
+  async function handleLevelComplete(completion) {
+    // Show achievement toasts first
+    if (completion.newAchievements?.length > 0) {
+      completion.newAchievements.forEach((ach, i) => {
+        setTimeout(() => toast.showAchievement(ach), i * 800);
+      });
+    }
+
+    // Update progress bar
+    progressBar.render();
+
+    // Update level panel
+    levelPanel.render();
+
+    // Level unlock animation for next level
+    if (completion.nextLevel) {
+      setTimeout(() => levelPanel.unlockAnimation(completion.nextLevel.id), 500);
+    }
+
+    // Show completion overlay
+    const action = await toast.showLevelComplete({
+      level: completion.level,
+      xpEarned: completion.xpEarned,
+      nextLevel: completion.nextLevel,
+      successMessage: completion.successMessage,
+    });
+
+    if (action === 'next' && completion.nextLevel) {
+      levelManager.advanceToNext();
+      setupCurrentLevel();
+    }
+  }
+
+  // ─── Level Switch ─────────────────────────────────────────────────────────────
+  function handleLevelSwitch(levelId) {
+    const success = levelManager.jumpToLevel(levelId);
+    if (success) {
+      terminal.clear();
+      setupCurrentLevel();
+    }
+  }
+
+  // ─── Merge Resolution ─────────────────────────────────────────────────────────
+  function handleMergeResolution({ filename, content }) {
+    terminal.printSystemMessage(`✅ Conflict in ${filename} resolved.`, 'success');
+    terminal.printSystemMessage(`💡 Now run: git add ${filename}`, 'info');
+    terminal.printSystemMessage(`💡 Then: git commit -m "Resolve merge conflict"`, 'info');
+    hintPanel.clearError();
+    hintPanel.updateGitTree(repo);
+
+    // Check if level completes after resolution
+    const completion = levelManager.checkCompletion(repo);
+    if (completion.completed) {
+      handleLevelComplete(completion);
+    }
+  }
+
+  // ─── Global Controls ─────────────────────────────────────────────────────────
+  document.getElementById('reset-btn')?.addEventListener('click', () => {
+    if (confirm('Reset ALL progress? This cannot be undone.')) {
+      levelManager.fullReset();
+      repo.reset();
+      terminal.clear();
+      progressBar.render();
+      setupCurrentLevel();
+      toast.show('Progress reset. Starting fresh! 🔄', 'info');
+    }
+  });
+
+  document.getElementById('help-btn')?.addEventListener('click', () => {
+    welcomeModal.show(true); // Force open the guide with forceShow=true
+  });
+
+  // Keyboard shortcut: Press '?' to open guide
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '?' && document.activeElement.tagName !== 'INPUT') {
+      e.preventDefault();
+      welcomeModal.show(true);
+    }
+  });
+
+  document.getElementById('achievements-btn')?.addEventListener('click', () => {
+    const stats = levelManager.getStats();
+    if (stats.achievements.length === 0) {
+      toast.show('No achievements yet. Complete levels to unlock them!', 'info');
+      return;
+    }
+    terminal.printSystemMessage(``, 'normal');
+    terminal.printSystemMessage(`🏆 Your Achievements:`, 'success');
+    stats.achievements.forEach(a => {
+      terminal.printSystemMessage(`  ${a.name} — ${a.desc}`, 'info');
+    });
+    terminal.printSystemMessage(``, 'normal');
+  });
+
+  // ─── Keyboard Shortcut: Escape closes merge editor ───────────────────────────
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && mergeEditor.visible) {
+      mergeEditor.hide();
+    }
+  });
+
+  // ─── Backend Sync ─────────────────────────────────────────────────────────────
+  const USER_ID = (() => {
+    let id = localStorage.getItem('gp_user_id');
+    if (!id) {
+      id = 'user_' + Math.random().toString(36).slice(2, 10);
+      localStorage.setItem('gp_user_id', id);
+    }
+    return id;
+  })();
+
+  async function syncToBackend() {
+    const badge = document.getElementById('sync-badge');
+    const label = document.getElementById('sync-label');
+    try {
+      badge?.classList.replace('offline', 'syncing');
+      badge?.classList.remove('synced');
+      if (label) label.textContent = 'Syncing…';
+
+      const stats = levelManager.getStats();
+      const repoState = repo.serialize();
+      const historyLog = terminal.persistentHistory;
+
+      await fetch(`/api/progress/${USER_ID}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          progress: { 
+            ...stats, 
+            repoState, 
+            history: historyLog 
+          } 
+        }),
+      });
+
+      badge?.classList.remove('syncing');
+      badge?.classList.add('synced');
+      if (label) label.textContent = 'Synced';
+      setTimeout(() => {
+        badge?.classList.remove('synced');
+        badge?.classList.add('offline');
+        if (label) label.textContent = 'Online';
+      }, 3000);
+    } catch {
+      badge?.classList.remove('syncing', 'synced');
+      badge?.classList.add('offline');
+      if (label) label.textContent = 'Offline';
+    }
+  }
+
+  // Debounce sync so we don't hit the server on every keystroke
+  let syncTimer;
+  function debouncedSync() {
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(syncToBackend, 2000);
+  }
+
+  async function loadProgress() {
+    const badge = document.getElementById('sync-badge');
+    const label = document.getElementById('sync-label');
+    try {
+      const res = await fetch(`/api/progress/${USER_ID}`);
+      const data = await res.json();
+      
+      if (data.found && data.progress) {
+        const p = data.progress;
+        
+        // Hydrate Level Progress
+        levelManager.restoreStats({
+          currentLevelId: p.currentLevelId,
+          completedLevels: p.completedLevels,
+          unlockedLevels: p.unlockedLevels,
+          totalXP: p.totalXP,
+          achievements: p.achievements
+        });
+
+        // Hydrate Repository State
+        if (p.repoState) {
+          repo.deserialize(p.repoState);
+        }
+
+        // Hydrate History
+        if (p.history) {
+          terminal.persistentHistory = p.history;
+        }
+
+        // Setup UI
+        progressBar.render();
+        setupCurrentLevel();
+        
+        toast.show('Welcome back! Progress restored. 💾', 'success');
+      } else {
+        setupCurrentLevel();
+      }
+    } catch (err) {
+      console.error('Load Error:', err);
+      setupCurrentLevel();
+    }
+  }
+
+  // ─── Sync UI Controls ─────────────────────────────────────────────────────────
+  const tokenSyncInfo = new TokenSyncInfo(USER_ID, (importCode) => {
+    if (importCode && importCode !== USER_ID) {
+      if (confirm('Import data from this code? Current progress will be overwritten.')) {
+        localStorage.setItem('gp_user_id', importCode);
+        window.location.reload();
+      }
+    }
+  });
+  
+  document.getElementById('sync-badge')?.addEventListener('click', () => {
+    tokenSyncInfo.show();
+  });
+
+  // Check health on load
+  async function checkBackend() {
+    const badge = document.getElementById('sync-badge');
+    const label = document.getElementById('sync-label');
+    try {
+      const res  = await fetch('/api/health', { signal: AbortSignal.timeout(2000) });
+      const data = await res.json();
+      if (data.status === 'ok') {
+        badge?.classList.add('synced');
+        if (label) label.textContent = '🔄 Sync Token';
+        // Update AI status in the panel
+        const aiStatus = document.getElementById('ai-status');
+        if (aiStatus) aiStatus.textContent = data.aiActive ? '● AI Active' : '● Online';
+      }
+    } catch {
+      if (label) label.textContent = 'Offline';
+    }
+  }
+
+  checkBackend();
+  loadProgress();
+
+  } catch (err) {
+    console.error('🔴 Fatal initialization error:', err);
+    const output = document.getElementById('terminal-output');
+    if (output) {
+      output.innerHTML = `<div style="color: #ff5e5b; font-family: monospace; padding: 16px;">
+        <strong>❌ Initialization Error</strong><br><br>
+        ${err.message}<br><br>
+        <small>Check browser console (F12) for details</small>
+      </div>`;
+    }
+  }
+</script>
+
+</body>
+</html>

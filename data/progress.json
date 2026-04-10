@@ -1,0 +1,123 @@
+{
+  "user_5fwddmkn": {
+    "currentLevelId": 3,
+    "completedLevels": [],
+    "unlockedLevels": [
+      1
+    ],
+    "totalXP": 350,
+    "achievements": [
+      {
+        "id": "first_init",
+        "name": "🔰 Git Awakens",
+        "desc": "Initialized your first repository",
+        "earnedAt": 1775659651205
+      },
+      {
+        "id": "first_commit",
+        "name": "📦 First Blood",
+        "desc": "Made your first commit",
+        "earnedAt": 1775660964779
+      }
+    ],
+    "usedCommandsArr": [],
+    "levelCommandSetsArr": {},
+    "lastPlayed": "2026-04-10T13:04:11.559Z",
+    "updatedAt": "2026-04-10T13:04:11.560Z"
+  },
+  "user_eaqivap9": {
+    "currentLevelId": 3,
+    "completedLevels": [],
+    "unlockedLevels": [
+      1
+    ],
+    "totalXP": 350,
+    "achievements": [
+      {
+        "id": "first_init",
+        "name": "🔰 Git Awakens",
+        "desc": "Initialized your first repository",
+        "earnedAt": 1775635687586
+      },
+      {
+        "id": "first_commit",
+        "name": "📦 First Blood",
+        "desc": "Made your first commit",
+        "earnedAt": 1775635750099
+      }
+    ],
+    "usedCommandsArr": [],
+    "levelCommandSetsArr": {},
+    "lastPlayed": "2026-04-08T15:13:13.515Z",
+    "updatedAt": "2026-04-08T15:13:13.519Z"
+  },
+  "user_soba90qon7y5q": {
+    "currentLevelId": 3,
+    "completedLevels": [
+      1,
+      2,
+      3
+    ],
+    "unlockedLevels": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "totalXP": 350,
+    "achievements": [
+      {
+        "id": "first_init",
+        "name": "🔰 Git Awakens",
+        "desc": "Initialized your first repository",
+        "earnedAt": 1775659651205
+      },
+      {
+        "id": "first_commit",
+        "name": "📦 First Blood",
+        "desc": "Made your first commit",
+        "earnedAt": 1775660964779
+      }
+    ],
+    "usedCommandsArr": [],
+    "levelCommandSetsArr": {
+      "1": [
+        "git-init",
+        "git-status"
+      ],
+      "2": [
+        "undo",
+        "touch-file",
+        "git-add",
+        "git-commit"
+      ],
+      "3": [
+        "git-init",
+        "git-log",
+        "touch-file",
+        "git-add",
+        "git-commit",
+        "git-checkout",
+        "git-rebase",
+        "git-status"
+      ]
+    },
+    "lastPlayed": "2026-04-10T12:53:51.410Z",
+    "updatedAt": "2026-04-10T12:53:51.411Z"
+  },
+  "user_elxv1uk9b49h3": {
+    "currentLevelId": 2,
+    "completedLevels": [],
+    "unlockedLevels": [
+      1
+    ],
+    "totalXP": 0,
+    "achievements": [],
+    "usedCommandsArr": [],
+    "levelCommandSetsArr": {},
+    "repoState": null,
+    "history": [],
+    "lastPlayed": "2026-04-10T14:30:49.255Z",
+    "updatedAt": "2026-04-10T14:30:49.256Z"
+  }
+}
