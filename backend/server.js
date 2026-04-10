@@ -78,13 +78,14 @@ app.use((err, req, res, next) => {
 });
 
 // ── Start ────────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  const key = process.env.OPENROUTER_API_KEY || process.env.API_KEY;
-  const aiStatus = key && key !== 'your_openrouter_api_key_here' && key !== 'your_key_here'
-    ? '✅ OpenRouter AI connected'
-    : '⚠️  No AI key detected (fallback enabled)';
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    const key = process.env.OPENROUTER_API_KEY || process.env.API_KEY;
+    const aiStatus = key && key !== 'your_openrouter_api_key_here' && key !== 'your_key_here'
+      ? '✅ OpenRouter AI connected'
+      : '⚠️  No AI key detected (fallback enabled)';
 
-  console.log(`
+    console.log(`
 ╔══════════════════════════════════════════════╗
 ║     🎮  Git Playground Server v2.0           ║
 ╠══════════════════════════════════════════════╣
@@ -93,6 +94,7 @@ app.listen(PORT, () => {
 ║  ${aiStatus.padEnd(44)}║
 ╚══════════════════════════════════════════════╝
   `);
-});
+  });
+}
 
 export default app;
